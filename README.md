@@ -4,6 +4,8 @@
 
 一个纯前端的手机端 Web 应用。没有后端、没有账号、没有数据库服务——所有数据留在你自己的浏览器里，可以直接托管在 GitHub Pages 上。
 
+**在线体验：** <https://zenj-maker.github.io/whats-for-dinner/>
+
 ---
 
 ## 它解决什么问题
@@ -29,13 +31,19 @@
 
 ## 界面
 
-三个主要页面：
+| 点菜首页 | 转盘抽菜 | 菜品库 |
+|:---:|:---:|:---:|
+| ![点菜首页](docs/screenshots/home.png) | ![转盘抽菜](docs/screenshots/spin.png) | ![菜品库](docs/screenshots/dishes.png) |
+| 按现有食材算匹配度，四档排序 | 点「抽一道」才进转盘，等概率 | 自己做的和 AI 生成的都在这里 |
 
-1. **点菜首页** —— 顶部是「我的冰箱」食材条，下面是排序 tab 和菜品列表，每条显示封面、菜名、时长难度、能用上的食材和匹配度。底部是「抽一道」按钮。
-2. **转盘页** —— 环形排列的菜品缩略图 + 菜名，指针固定在 12 点，转盘旋转 5 圈后停在结果上，弹出结果卡。
-3. **AI 厨房** —— 显示当前食材与模型配置状态，三个生成入口，结果以卡片流展示。
+| 食材库 | AI 厨房 | AI 生成结果 |
+|:---:|:---:|:---:|
+| ![食材库](docs/screenshots/pantry.png) | ![AI 厨房](docs/screenshots/ai.png) | ![AI 生成结果](docs/screenshots/ai-results.png) |
+| 记下家里有什么 | 三个生成入口 | 结构化菜谱，可单条或全部入库 |
 
-> 截图放在 `docs/screenshots/`（本地跑起来后按需补充，见「本地开发」）。
+设置页（AI 配置与数据备份）：
+
+<img src="docs/screenshots/settings.png" width="240" alt="设置页：AI 配置与数据备份" />
 
 ## 本地开发
 
@@ -134,4 +142,4 @@ npm run test
 
 ## License
 
-MIT
+[MIT](LICENSE) © 2026

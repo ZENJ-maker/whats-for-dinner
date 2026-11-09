@@ -34,7 +34,6 @@ export function PhotoPicker({ file, existingUrl, onChange }: PhotoPickerProps) {
           <img src={shown} alt="菜品封面预览" className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full flex-col items-center justify-center gap-1">
-            <span className="text-xl">📷</span>
             拍照 / 选图
           </span>
         )}

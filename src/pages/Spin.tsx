@@ -71,7 +71,6 @@ export function Spin() {
     return (
       <div className="pt-16">
         <EmptyState
-          emoji="🎲"
           title="没有可以抽的菜"
           description={
             onlyCanCook
@@ -229,11 +228,7 @@ function WheelSlot({ dish }: { dish: DishWithMatch['dish'] }) {
   const url = usePhotoUrl(dish.photoId)
   return (
     <div className="h-[46px] w-[46px] overflow-hidden rounded-full border-2 border-white bg-cream-deep shadow-sm">
-      {url ? (
-        <img src={url} alt="" className="h-full w-full object-cover" />
-      ) : (
-        <span className="flex h-full w-full items-center justify-center text-lg">🍽</span>
-      )}
+      {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : null}
     </div>
   )
 }
@@ -262,9 +257,7 @@ function ResultCard({ match, isTonight, onCook, onAgain, onClose }: ResultCardPr
           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-cream-deep">
             {url ? (
               <img src={url} alt={dish.name} className="h-full w-full object-cover" />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-2xl">🍲</span>
-            )}
+            ) : null}
           </div>
           <div className="min-w-0">
             <p className="text-xs text-brand">抽中了</p>

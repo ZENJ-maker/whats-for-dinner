@@ -67,7 +67,6 @@ export function Pantry() {
 
       {ingredients.length === 0 ? (
         <EmptyState
-          emoji="🧺"
           title="冰箱还是空的"
           description="把现在有的食材录进来，哪怕只有三样，也能看出今天能做什么。"
         />

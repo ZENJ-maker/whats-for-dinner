@@ -17,9 +17,7 @@ export function DishCard({ match, onCook, isTonight }: DishCardProps) {
       <div className="relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl bg-cream-deep">
         {url ? (
           <img src={url} alt={dish.name} className="h-full w-full object-cover" loading="lazy" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center text-2xl">🍲</span>
-        )}
+        ) : null}
         {dish.source === 'ai' ? (
           <span className="absolute left-1 top-1 rounded-full bg-ink/70 px-1.5 py-0.5 text-[9px] font-medium text-white">
             AI

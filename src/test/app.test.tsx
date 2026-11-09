@@ -95,6 +95,8 @@ describe('界面冒烟测试', () => {
     expect(await screen.findByText('番茄虾仁')).toBeInTheDocument()
     expect(await screen.findByText('拍黄瓜')).toBeInTheDocument()
     expect(await screen.findByText('现有食材就能做')).toBeInTheDocument()
+    // 去掉 emoji 后，按钮文字仍要能被读屏读到
+    expect(screen.getByRole('button', { name: /抽一道/ })).toBeInTheDocument()
   })
 
   it('有数据时转盘页渲染出候选数量和转动按钮', async () => {

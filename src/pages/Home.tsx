@@ -112,7 +112,6 @@ export function Home() {
       <div className="mt-2 space-y-2.5 px-4">
         {dishes.length === 0 ? (
           <EmptyState
-            emoji="🍳"
             title="还没有记录任何菜"
             description="先把你平时会做的菜录进来，写上主料，之后只要录了家里有的食材，就能自动挑出今天能做的。"
             action={
@@ -128,7 +127,6 @@ export function Home() {
           />
         ) : visible.length === 0 ? (
           <EmptyState
-            emoji="🧺"
             title={onlyCanCook ? '现有食材还凑不出一道菜' : '这里还是空的'}
             description={
               onlyCanCook
@@ -164,7 +162,7 @@ export function Home() {
             canSpin ? 'bg-brand text-white shadow-brand/25' : 'bg-line text-muted'
           }`}
         >
-          🎲 抽一道
+          抽一道
           {canSpin ? <span className="ml-1.5 text-xs font-normal opacity-80">选择困难时用</span> : null}
         </button>
       </div>

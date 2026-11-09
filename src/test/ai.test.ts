@@ -3,6 +3,7 @@ import { extractJson, parseAiBatch } from '@/ai/schema'
 import { collectFlavors } from '@/ai/prompt'
 import { buildCacheKey } from '@/ai/cache'
 import { mockDishes } from '@/ai/mock'
+import { AiError, describeHttpError, extractServerMessage } from '@/ai/client'
 
 const validDish = {
   name: '番茄虾仁',
@@ -102,6 +103,61 @@ describe('buildCacheKey', () => {
     const a = await buildCacheKey(base)
     expect(await buildCacheKey({ ...base, model: 'other' })).not.toBe(a)
     expect(await buildCacheKey({ ...base, mode: 'explore' })).not.toBe(a)
+  })
+})
+
+describe('describeHttpError', () => {
+  const body = (message: string) => JSON.stringify({ error: { message } })
+
+  it('401 提示 key 无效，并带上服务端原话', () => {
+    const error = describeHttpError(401, body('Authentication Fails'))
+    expect(error).toBeInstanceOf(AiError)
+    expect(error.kind).toBe('auth')
+    expect(error.message).toContain('401')
+    expect(error.message).toContain('Authentication Fails')
+  })
+
+  it('403 归为权限问题', () => {
+    expect(describeHttpError(403, body('Forbidden')).kind).toBe('forbidden')
+  })
+
+  it('400 归为请求错误，并保留「模型不存在」这类原话', () => {
+    const error = describeHttpError(400, body('Model Not Exist'))
+    expect(error.kind).toBe('request')
+    expect(error.message).toContain('Model Not Exist')
+  })
+
+  it('404 直接指向 Base URL 少了 /v1', () => {
+    const error = describeHttpError(404, '')
+    expect(error.kind).toBe('endpoint')
+    expect(error.message).toContain('/v1')
+  })
+
+  it('429 与 5xx 分开归因', () => {
+    expect(describeHttpError(429, '').kind).toBe('rate')
+    const server = describeHttpError(502, 'bad gateway')
+    expect(server.kind).toBe('server')
+    expect(server.message).toContain('bad gateway')
+  })
+})
+
+describe('extractServerMessage', () => {
+  it('从 OpenAI 风格的 error.message 里取', () => {
+    expect(extractServerMessage(JSON.stringify({ error: { message: 'Incorrect API key' } }))).toBe(
+      'Incorrect API key',
+    )
+  })
+
+  it('error 直接是字符串时也能取', () => {
+    expect(extractServerMessage(JSON.stringify({ error: 'quota exceeded' }))).toBe('quota exceeded')
+  })
+
+  it('不是 JSON 时截断原文', () => {
+    expect(extractServerMessage('<html>502 Bad Gateway</html>')).toBe('<html>502 Bad Gateway</html>')
+  })
+
+  it('空 body 不崩', () => {
+    expect(extractServerMessage('')).toBe('')
   })
 })
 

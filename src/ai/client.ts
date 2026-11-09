@@ -5,7 +5,17 @@ import { mockDishes } from './mock'
 import { PROMPT_VERSION, buildPrompt } from './prompt'
 import { extractJson, parseAiBatch } from './schema'
 
-export type AiErrorKind = 'auth' | 'rate' | 'network' | 'timeout' | 'format' | 'server' | 'abort'
+export type AiErrorKind =
+  | 'auth'
+  | 'forbidden'
+  | 'endpoint'
+  | 'request'
+  | 'rate'
+  | 'network'
+  | 'timeout'
+  | 'format'
+  | 'server'
+  | 'abort'
 
 export class AiError extends Error {
   kind: AiErrorKind
@@ -119,18 +129,17 @@ async function requestOnce(
   }
 
   try {
+    const raw = await response.text()
+
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new AiError('auth', 'API key 无效或没有权限')
-      }
-      if (response.status === 429) {
-        throw new AiError('rate', '请求太频繁了，等几秒再试')
-      }
-      throw new AiError('server', `模型服务返回 ${response.status}`)
+      throw describeHttpError(response.status, raw)
     }
 
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[]
+    let data: { choices?: { message?: { content?: string } }[] }
+    try {
+      data = JSON.parse(raw) as { choices?: { message?: { content?: string } }[] }
+    } catch {
+      throw new AiError('format', '模型返回的不是 JSON')
     }
     const content = data.choices?.[0]?.message?.content
     if (!content) throw new AiError('format', '模型返回了空内容')
@@ -150,6 +159,114 @@ function endpoint(baseUrl: string): string {
   const trimmed = baseUrl.trim().replace(/\/+$/, '')
   if (trimmed.endsWith('/chat/completions')) return trimmed
   return `${trimmed}/chat/completions`
+}
+
+/** 从服务端返回的错误体里抠出一句人话，抠不出来就截断原始文本 */
+export function extractServerMessage(body: string): string {
+  try {
+    const data = JSON.parse(body) as {
+      error?: { message?: string } | string
+      message?: string
+      detail?: string
+    }
+    const raw =
+      (typeof data.error === 'string' ? data.error : data.error?.message) ??
+      data.message ??
+      data.detail
+    if (typeof raw === 'string' && raw.trim()) return raw.trim().slice(0, 160)
+  } catch {
+    /* 不是 JSON，走下面的截断 */
+  }
+  return body.trim().slice(0, 160)
+}
+
+/**
+ * HTTP 状态码 → 能直接照做的一句话。
+ *
+ * 之前 401 和 403 都被压成「key 无效或没有权限」，用户根本看不出
+ * 是 key 错了、模型名错了，还是 Base URL 多了少了 /v1。
+ */
+export function describeHttpError(status: number, body: string): AiError {
+  const detail = extractServerMessage(body)
+  const tail = detail ? `（服务端说：${detail}）` : ''
+
+  if (status === 401) {
+    return new AiError('auth', `API key 无效或已过期（401）${tail}`)
+  }
+  if (status === 403) {
+    return new AiError('forbidden', `这个 key 没有访问权限（403）${tail}`)
+  }
+  if (status === 404) {
+    return new AiError(
+      'endpoint',
+      `接口地址不对（404），检查 Base URL 是不是少了 /v1${tail}`,
+    )
+  }
+  if (status === 400 || status === 422) {
+    return new AiError(
+      'request',
+      `请求被拒绝（${status}）${tail || '，常见原因是模型名写错了'}`,
+    )
+  }
+  if (status === 429) {
+    return new AiError('rate', `请求太频繁或额度用完了（429）${tail}`)
+  }
+  if (status >= 500) {
+    return new AiError('server', `模型服务出错（${status}）${tail}`)
+  }
+  return new AiError('server', `请求失败（${status}）${tail}`)
+}
+
+export interface ConnectionResult {
+  ok: boolean
+  message: string
+  status?: number
+}
+
+const TEST_TIMEOUT_MS = 15_000
+
+/**
+ * 设置页的「测试连接」：只发一个最小请求，
+ * 用来把「key 错 / 模型名错 / 地址错」这三种情况当场分开。
+ */
+export async function testConnection(config: AiConfig): Promise<ConnectionResult> {
+  if (!config.apiKey.trim()) {
+    return { ok: false, message: '还没填 API key' }
+  }
+
+  const { signal, cleanup } = withTimeout(undefined, TEST_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(endpoint(config.baseUrl), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey.trim()}`,
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 4,
+      }),
+      signal,
+    })
+
+    const raw = await response.text()
+    if (!response.ok) {
+      return { ok: false, status: response.status, message: describeHttpError(response.status, raw).message }
+    }
+    return { ok: true, message: `连接成功，模型 ${config.model} 可以正常调用` }
+  } catch (error) {
+    if (isAbort(error)) {
+      return { ok: false, message: '连接超时（15 秒），检查网络或 Base URL' }
+    }
+    return {
+      ok: false,
+      message: '连不上这个地址：可能是网络问题，也可能是对方不允许浏览器直接调用（CORS）',
+    }
+  } finally {
+    cleanup()
+  }
 }
 
 function withTimeout(signal: AbortSignal | undefined, ms: number) {

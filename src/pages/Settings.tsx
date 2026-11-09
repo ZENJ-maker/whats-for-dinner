@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { testConnection, type ConnectionResult } from '@/ai/client'
 import { buildBackup, clearEverything, restoreBackup, type BackupBundle } from '@/lib/db'
 import { useAiStore } from '@/stores/useAiStore'
 import { useKitchenStore } from '@/stores/useKitchenStore'
@@ -19,6 +20,18 @@ export function Settings() {
 
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState('')
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<ConnectionResult | null>(null)
+
+  const runTest = async () => {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      setTestResult(await testConnection(config))
+    } finally {
+      setTesting(false)
+    }
+  }
 
   const exportBackup = async () => {
     try {
@@ -98,6 +111,10 @@ export function Settings() {
             placeholder="deepseek-chat"
           />
         </label>
+        <p className="mt-1 text-[10px] leading-relaxed text-muted">
+          DeepSeek 官方的模型名是 deepseek-chat 或 deepseek-reasoner。如果 key 来自中转服务，模型名和
+          Base URL 都要用那家服务商给的。
+        </p>
 
         <label className="mt-2.5 block space-y-1">
           <span className="text-[11px] text-ink-soft">API Key</span>
@@ -110,6 +127,25 @@ export function Settings() {
             autoComplete="off"
           />
         </label>
+
+        <button
+          type="button"
+          onClick={() => void runTest()}
+          disabled={testing}
+          className="mt-3 w-full rounded-xl border border-line py-2.5 text-sm disabled:opacity-60"
+        >
+          {testing ? '测试中…' : '测试连接'}
+        </button>
+
+        {testResult ? (
+          <p
+            className={`mt-2 rounded-xl px-3 py-2 text-[11px] leading-relaxed ${
+              testResult.ok ? 'bg-leaf/10 text-leaf' : 'bg-brand-soft/70 text-brand-dark'
+            }`}
+          >
+            {testResult.message}
+          </p>
+        ) : null}
       </section>
 
       <section className="mx-4 mt-3 rounded-2xl bg-white p-4">

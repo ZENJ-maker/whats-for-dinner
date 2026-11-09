@@ -45,12 +45,22 @@ export interface GenerateResult {
 
 const TIMEOUT_MS = 60_000
 
+/**
+ * 清掉 key 里的空白和不可见字符。
+ *
+ * 从聊天软件、邮件里复制的 key 经常夹着换行、全角空格或零宽字符，
+ * 肉眼完全看不出来，但发出去就是 invalid api key。
+ */
+export function sanitizeKey(raw: string): string {
+  return raw.replace(/[\s\u200b-\u200d\ufeff]+/g, '')
+}
+
 export async function generateDishes(args: GenerateArgs): Promise<GenerateResult> {
   const { config, pantry, existingNames, count = 12, mode = 'batch', signal } = args
   const flavors = args.flavors ?? []
 
   // 没配 key：走演示数据，UI 会打上「演示数据」角标
-  if (!config.apiKey.trim()) {
+  if (!sanitizeKey(config.apiKey)) {
     await sleep(400)
     return { dishes: mockDishes(pantry, existingNames, count), cached: false, mock: true }
   }
@@ -106,7 +116,7 @@ async function requestOnce(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey.trim()}`,
+        Authorization: `Bearer ${sanitizeKey(config.apiKey)}`,
       },
       body: JSON.stringify({
         model: config.model,
@@ -230,7 +240,7 @@ const TEST_TIMEOUT_MS = 15_000
  * 用来把「key 错 / 模型名错 / 地址错」这三种情况当场分开。
  */
 export async function testConnection(config: AiConfig): Promise<ConnectionResult> {
-  if (!config.apiKey.trim()) {
+  if (!sanitizeKey(config.apiKey)) {
     return { ok: false, message: '还没填 API key' }
   }
 
@@ -241,7 +251,7 @@ export async function testConnection(config: AiConfig): Promise<ConnectionResult
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey.trim()}`,
+        Authorization: `Bearer ${sanitizeKey(config.apiKey)}`,
       },
       body: JSON.stringify({
         model: config.model,

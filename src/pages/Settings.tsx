@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { testConnection, type ConnectionResult } from '@/ai/client'
+import { testConnection, sanitizeKey, type ConnectionResult } from '@/ai/client'
 import { buildBackup, clearEverything, restoreBackup, type BackupBundle } from '@/lib/db'
 import { useAiStore } from '@/stores/useAiStore'
 import { useKitchenStore } from '@/stores/useKitchenStore'
@@ -12,6 +12,13 @@ const PRESETS = [
 
 const inputClass =
   'w-full rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none placeholder:text-muted/70 focus:border-brand/60'
+
+/** 只露头尾，方便和服务商后台显示的那串对一下 */
+function maskKey(raw: string): string {
+  const clean = sanitizeKey(raw)
+  if (clean.length <= 8) return clean
+  return `${clean.slice(0, 3)}…${clean.slice(-4)}`
+}
 
 export function Settings() {
   const config = useAiStore((s) => s.config)
@@ -126,6 +133,14 @@ export function Settings() {
             placeholder="sk-…"
             autoComplete="off"
           />
+          {config.apiKey ? (
+            <p className="mt-1 text-[10px] leading-relaxed text-muted">
+              当前 key：{maskKey(config.apiKey)}，共 {sanitizeKey(config.apiKey).length} 个字符
+              {sanitizeKey(config.apiKey) !== config.apiKey
+                ? '（含空格或不可见字符，发送时会自动去掉）'
+                : ''}
+            </p>
+          ) : null}
         </label>
 
         <button

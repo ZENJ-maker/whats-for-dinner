@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { sanitizeKey } from '@/ai/client'
 import type { AiDish } from '@/lib/types'
 import { useAiStore, type AiMode } from '@/stores/useAiStore'
 import { useKitchenStore } from '@/stores/useKitchenStore'
@@ -23,7 +24,7 @@ export function AiKitchen() {
   const importAiDishes = useKitchenStore((s) => s.importAiDishes)
 
   const [importedCount, setImportedCount] = useState(0)
-  const hasKey = Boolean(config.apiKey.trim())
+  const hasKey = Boolean(sanitizeKey(config.apiKey))
 
   const importOne = async (dish: AiDish) => {
     const count = await importAiDishes([dish])

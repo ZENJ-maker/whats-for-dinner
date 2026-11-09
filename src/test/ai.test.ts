@@ -3,7 +3,7 @@ import { extractJson, parseAiBatch } from '@/ai/schema'
 import { collectFlavors } from '@/ai/prompt'
 import { buildCacheKey } from '@/ai/cache'
 import { mockDishes } from '@/ai/mock'
-import { AiError, describeHttpError, extractServerMessage } from '@/ai/client'
+import { AiError, describeHttpError, extractServerMessage, sanitizeKey } from '@/ai/client'
 
 const validDish = {
   name: '番茄虾仁',
@@ -103,6 +103,20 @@ describe('buildCacheKey', () => {
     const a = await buildCacheKey(base)
     expect(await buildCacheKey({ ...base, model: 'other' })).not.toBe(a)
     expect(await buildCacheKey({ ...base, mode: 'explore' })).not.toBe(a)
+  })
+})
+
+describe('sanitizeKey', () => {
+  it('去掉换行和空格', () => {
+    expect(sanitizeKey('  sk-abc def\n')).toBe('sk-abcdef')
+  })
+
+  it('去掉零宽字符和 BOM', () => {
+    expect(sanitizeKey('sk-\u200babc\ufeff')).toBe('sk-abc')
+  })
+
+  it('正常 key 原样返回', () => {
+    expect(sanitizeKey('sk-1234567890abcdef')).toBe('sk-1234567890abcdef')
   })
 })
 
